@@ -20,8 +20,7 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
         type === "signup" && value.trim().length < 3
           ? "Name must be at least 3 characters long"
           : null,
-      email: (value) =>
-        /^\S+@\S+\.\S+$/.test(value) ? null : "Invalid email",
+      email: (value) => (/^\S+@\S+\.\S+$/.test(value) ? null : "Invalid email"),
       password: (value) =>
         value.length >= 6
           ? null
@@ -30,28 +29,37 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
   });
 
   // ✅ Function to store token in cache with expiration time
-  const saveTokenToCache = (token: string) => {
-    const expirationTime = new Date().getTime() + 60 * 60 * 1000; // Expires in 1 hour
-    const cacheData = { token, expirationTime };
-    sessionStorage.setItem("authTokenCache", JSON.stringify(cacheData)); // Store in session cache
+  // Function to save token to cookies
+  const saveTokenToCookie = (token: string) => {
+    const expirationTime = new Date(
+      new Date().getTime() + 60 * 60 * 1000
+    ).toUTCString(); // Expires in 1 hour
+    document.cookie = `authToken=${token}; expires=${expirationTime}; path=/; Secure; HttpOnly`;
+    console.log(document.cookie, "qqqqqqqqqqqqqqqq");
   };
 
-  // ✅ Function to retrieve token from cache
-  const getTokenFromCache = () => {
-    const cacheData = sessionStorage.getItem("authTokenCache");
-    if (!cacheData) return null;
+  // Function to retrieve token from cookies
+  const getTokenFromCookie = () => {
+    const cookies = document.cookie.split("; ");
+    for (const cookie of cookies) {
+      const [name, value] = cookie.split("=");
+      if (name === "__session") {
+        console.log(value, "valuevaluevaluevaluevaluevalue");
 
-    const { token, expirationTime } = JSON.parse(cacheData);
-    if (new Date().getTime() > expirationTime) {
-      sessionStorage.removeItem("authTokenCache"); // Remove expired token
-      return null;
+        return value;
+      }
     }
-    return token;
+    return null;
   };
 
-   // Remove expired token on component mount
-   useEffect(() => {
-    getTokenFromCache();
+  // Function to remove token from cookies (if needed)
+  const removeTokenFromCookie = () => {
+    document.cookie = `authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  };
+
+  // Remove expired token on component mount
+  useEffect(() => {
+    removeTokenFromCookie();
   }, []);
 
   // ✅ Handle Login Function
@@ -61,10 +69,11 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
       console.log("🎉 Logged in user:", data);
 
       // Save token in session storage cache
-      saveTokenToCache(data.token);
+      saveTokenToCookie(data.token);
 
       toast.success("✅ Login Successful!", { position: "top-right" });
-      close
+      getTokenFromCookie();
+      close();
     } catch (error: any) {
       console.error("❌ Login failed!", error);
       toast.error(error?.response?.data?.message || "Login failed", {
@@ -74,7 +83,11 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
   };
 
   // Handle Signup Function
-  const handleSignup = async (values: { name: string; email: string; password: string }) => {
+  const handleSignup = async (values: {
+    name: string;
+    email: string;
+    password: string;
+  }) => {
     try {
       const data = await singUpUser(values.name, values.email, values.password);
       console.log("🎉 Signed up user:", data);
@@ -154,7 +167,6 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
           </Button>
         </Group>
       )}
-
       <ToastContainer
         position="top-right"
         autoClose={5000}

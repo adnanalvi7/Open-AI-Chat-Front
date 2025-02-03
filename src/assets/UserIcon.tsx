@@ -1,7 +1,4 @@
-import { SVGProps } from 'react';
-
-const UserIcon = (props: SVGProps<SVGSVGElement>) => {
-  const { stroke = '#D0D5DD', strokeWidth = '1.5' } = props;
+const UserIcon = () => {
 
   return (
     <svg width="60px" height="60px" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
