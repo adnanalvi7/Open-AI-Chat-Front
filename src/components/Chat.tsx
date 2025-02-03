@@ -1,106 +1,86 @@
-import { useState, useRef, useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { Avatar, Button, LoadingOverlay, Paper, ScrollArea, Text, TextInput, Container, Stack, Group } from '@mantine/core';
-import { useForm } from '@mantine/form';
-
-interface Message {
-  id: string;
-  content: string;
-  isAI: boolean;
-  timestamp: Date;
-}
+import { Container, Dialog } from "@mantine/core";
+import Header from "./Header";
+import ChatInput from "./ChatInput";
+import { useEffect, useState } from "react";
+import { useChatSocket } from "../socket/socket";
+import { ThreeDots } from "react-loader-spinner";
+import { useDisclosure } from "@mantine/hooks";
+import AuthenticationDialog from "./authenticationDialog/AuthenticationDialog";
 
 export default function Chat() {
-  const queryClient = useQueryClient();
-  const viewport = useRef<HTMLDivElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-
-  // Fetch chat history
-  const { data: messages = [] } = useQuery<Message[]>({
-    queryKey: ['messages'],
-    queryFn: async () => {
-      const response = await axios.get('/api/messages');
-      return response.data;
-    },
-    refetchInterval: 3000,
-  });
-
-  // Message form
-  const form = useForm({
-    initialValues: { prompt: '' },
-  });
-
-  // Send message mutation
-  const { mutate: sendMessage, isPending } = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await axios.post('/api/messages', { content });
-      return response.data;
-    },
-    onMutate: async (content: string) => {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        content,
-        isAI: false,
-        timestamp: new Date(),
-      };
-      
-      queryClient.setQueryData<Message[]>(['messages'], (old) => [
-        ...(old || []),
-        newMessage,
-      ]);
-
-      return { previousMessages: queryClient.getQueryData(['messages']) };
-    },
-    onError: (err, variables, context) => {
-      queryClient.setQueryData(['messages'], context?.previousMessages);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-      form.reset();
-    },
-  });
-
-  // Auto-scroll to bottom
+  const [currentMessage, setCurrentMessage] = useState(""); // Store the typed message
+  const [responseMessage, setResponseMessage] = useState(null); // Store the WebSocket response
+  const [loading, setLoading] = useState(false); // Loader state
+  const [opened, { toggle, close }] = useDisclosure(false);
+  // ✅ WebSocket setup
+  const { sendJsonMessage, receivedMessages, isConnected } = useChatSocket();
+  // ✅ Update response message when WebSocket receives a new message
   useEffect(() => {
-    if (autoScroll && viewport.current) {
-      viewport.current.scrollTo({
-        top: viewport.current.scrollHeight ?? 0,
-        behavior: 'smooth',
-      });
+    if (receivedMessages.length > 0) {
+      console.log(receivedMessages[receivedMessages.length - 1],'texttexttexttexttexttexttexttext');
+      if(!receivedMessages[receivedMessages.length - 1].success) {
+        toggle();
+      } else {
+        setResponseMessage(receivedMessages[receivedMessages.length - 1].message);
+      }
+     
+      setLoading(false); // Stop loader when message arrives
     }
-  }, [messages, autoScroll]);
+  }, [receivedMessages]);
+
+  // ✅ Function to send message via WebSocket
+  const sendMessage = (text: string) => {
+    if (!isConnected) {
+      console.warn("⚠️ Socket.IO not connected. Message not sent.");
+      return;
+    }
+    
+    setCurrentMessage(text); // Store the typed message
+    sendJsonMessage(text);
+    setLoading(true); // Start loader when message is sent
+  };
 
   return (
-    <Container size="md" p="md">
-      <Paper withBorder shadow="sm" radius="md" p="md" style={{ display: 'flex', flexDirection: 'column', height: '80vh' }}>
-        <LoadingOverlay visible={isPending} />
-        <ScrollArea style={{ flexGrow: 1 }} viewportRef={viewport}>
-          <Stack p="md">
-            {messages.map((message) => (
-              <Group key={message.id} align="flex-end">
-                {message.isAI && <Avatar color="blue" radius="xl">AI</Avatar>}
-                <Paper p="sm" radius="md" style={{ maxWidth: '70%', backgroundColor: message.isAI ? '#dbeafe' : '#e5e7eb' }}>
-                  <Text>{message.content}</Text>
-                  <Text size="xs" color="dimmed" mt={4}>
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </Text>
-                </Paper>
-                {!message.isAI && <Avatar color="gray" radius="xl">You</Avatar>}
-              </Group>
-            ))}
-          </Stack>
-        </ScrollArea>
+    <Container className="!h-screen flex pb-3 flex-col items-center w-full !max-w-full justify-between">
+      <div className="fixed bg-white top-0 left-0 w-full">
+        <Header />
+      </div>
 
-        <form onSubmit={form.onSubmit((values) => sendMessage(values.prompt))}>
-          <Group mt="md" >
-            <TextInput style={{ flex: 1 }} placeholder="Type your message..." {...form.getInputProps('prompt')} disabled={isPending} />
-            <Button type="submit" loading={isPending}>
-              Send
-            </Button>
-          </Group>
-        </form>
-      </Paper>
+      <div className="w-full pb-3 h-auto flex justify-center overflow-auto">
+        <div className="w-3/5 sm:!w-full flex flex-col items-end !mt-24">
+        {currentMessage && (
+          <div className="!w-[60%] !bg-[#f2f2f280] h-full mt-4 py-5 px-8 !rounded-3xl shadow-md">
+            
+              <span className="break-words leading-6 tracking-wid font-Barlow h-full !text-lg font-medium text-gray-600">
+                <strong>You:</strong> {currentMessage}
+              </span>
+            
+          </div>
+          )}
+          {loading && (
+            <div className="!w-[100%] flex justify-center items-center mt-4">
+              <ThreeDots visible={true} height="80" width="80" color="#000000" radius="9" ariaLabel="three-dots-loading" wrapperStyle={{}} wrapperClass="" />
+            </div>
+          )}
+          {responseMessage && !loading && (
+            <div className="flex w-[100%] tracking-wide flex-col gap-1 empty:hidden mt-8 first:pt-[3px]">
+              <span className="break-words leading-6 tracking-wid font-Barlow h-full !text-lg font-medium text-gray-700">
+                <strong>Bot:</strong> {responseMessage}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ✅ Pass `sendMessage` to ChatInput for sending messages */}
+      <div className="w-3/5 sm:!w-full">
+        <ChatInput onSendMessage={sendMessage} />
+      </div>
+      <Dialog classNames={{
+        root:"!shadow-gray-600 !shadow-lg"
+      }} position={{ top: '45%', left: '45%'}} opened={opened}>
+        <AuthenticationDialog close={close} />
+      </Dialog>
     </Container>
   );
 }

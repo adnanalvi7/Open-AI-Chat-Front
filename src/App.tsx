@@ -1,11 +1,16 @@
-import { AppProviders } from './providers';
+import { AppProviders } from '../providers';
 import Chat from './components/Chat';
-
+import './index.css';
+import './App.css';
+import '@mantine/core/styles.css';
+import { MantineProvider } from '@mantine/core';
 function App() {
   return (
-    <AppProviders>
+    <MantineProvider>
+      <AppProviders>
       <Chat />
     </AppProviders>
+    </MantineProvider>
   );
 }
 
