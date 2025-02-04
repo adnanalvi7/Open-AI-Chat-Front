@@ -11,12 +11,18 @@ export default function ChatInput({ onSendMessage }: ChatInputProps) {
 
   const handleSend = () => {
     if (message.trim()) {
-      onSendMessage(message); // Send message via WebSocket
+      onSendMessage(message.trim()); // Send message via WebSocket
       setMessage(""); // Clear input after sending
     }
   };
   return (
-    <div className="w-full max-h-[375px] mt-4 flex flex-col items-end px-5 py-3 bg-[#f2f2f280] rounded-3xl shadow-md">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSend();
+      }}
+      className="w-full max-h-[375px] mt-4 flex flex-col bg-gray-50 items-end px-5 py-3 rounded-3xl shadow"
+    >
       <Textarea
         classNames={{
           root: "w-full !bg-none !border-none",
@@ -26,15 +32,24 @@ export default function ChatInput({ onSendMessage }: ChatInputProps) {
         value={message}
         onChange={(e) => setMessage(e.currentTarget.value)}
         autosize
+        placeholder="Message"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
+        autoFocus
         minRows={2}
         maxRows={4}
       />
-      <div
-        className="w-[30px] h-[30px] bg-black rounded-full flex justify-center items-center"
+      <button
+        type="submit"
         onClick={handleSend}
+        className="w-[30px] h-[30px] bg-black rounded-full flex justify-center items-center"
       >
         <ArrowUp />
-      </div>
-    </div>
+      </button>
+    </form>
   );
 }

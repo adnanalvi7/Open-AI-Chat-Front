@@ -1,11 +1,38 @@
-import { Button, Group, TextInput } from "@mantine/core";
+import { Button, Flex, Group, PinInput, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useEffect, useState } from "react";
-import { loginUser, singUpUser } from "../../api/Api";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import {
+  loginUser,
+  resetPassword,
+  sendOtpCode,
+  singUpUser,
+  verifyOtpCode,
+} from "../../api/Api";
+import { toast } from "react-toastify";
+import { useAuth } from "../../context/Auth";
 
-export default function AuthenticationDialog({ close }: { close: () => void }) {
-  const [type, setType] = useState("");
+export default function AuthenticationDialog({
+  close,
+  authType,
+}: {
+  close: () => void;
+  authType: "" | "login" | "signup";
+}) {
+  const [type, setType] = useState<
+    "login" | "signup" | "" | "forgotPassword" | "otp" | "resetPassword"
+  >("");
+  const {
+    getTokenFromCookie,
+    saveTokenToCookie,
+    setLoading,
+    loading,
+    setUser,
+    setIsAuthenticated,
+    saveUserToCookie,
+  } = useAuth();
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   const form = useForm({
     mode: "uncontrolled",
@@ -14,7 +41,6 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
       email: "",
       password: "",
     },
-
     validate: {
       name: (value) =>
         type === "signup" && value.trim().length < 3
@@ -28,78 +54,132 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
     },
   });
 
-  // ✅ Function to store token in cache with expiration time
-  // Function to save token to cookies
-  const saveTokenToCookie = (token: string) => {
-    const expirationTime = new Date(
-      new Date().getTime() + 60 * 60 * 1000
-    ).toUTCString(); // Expires in 1 hour
-    document.cookie = `authToken=${token}; expires=${expirationTime}; path=/; Secure; HttpOnly`;
-    console.log(document.cookie, "qqqqqqqqqqqqqqqq");
-  };
-
-  // Function to retrieve token from cookies
-  const getTokenFromCookie = () => {
-    const cookies = document.cookie.split("; ");
-    for (const cookie of cookies) {
-      const [name, value] = cookie.split("=");
-      if (name === "__session") {
-        console.log(value, "valuevaluevaluevaluevaluevalue");
-
-        return value;
-      }
-    }
-    return null;
-  };
-
-  // Function to remove token from cookies (if needed)
-  const removeTokenFromCookie = () => {
-    document.cookie = `authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-  };
-
-  // Remove expired token on component mount
   useEffect(() => {
-    removeTokenFromCookie();
-  }, []);
+    if (authType) {
+      setType(authType);
+    } else {
+      setType("");
+    }
+  }, [authType]);
 
-  // ✅ Handle Login Function
   const handleLogin = async (values: { email: string; password: string }) => {
+    setLoading(true);
     try {
       const data = await loginUser(values.email, values.password);
-      console.log("🎉 Logged in user:", data);
 
-      // Save token in session storage cache
-      saveTokenToCookie(data.token);
-
-      toast.success("✅ Login Successful!", { position: "top-right" });
+      saveTokenToCookie(data.access_token);
+      if (data.user) {
+        if (data.user.password) {
+          delete data.user.password;
+        }
+        setUser(data.user);
+        saveUserToCookie(JSON.stringify(data.user));
+        setIsAuthenticated(true);
+      }
+      toast.success("Login Successful!", { position: "top-right" });
       getTokenFromCookie();
       close();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error("❌ Login failed!", error);
+      console.error("Login failed!", error);
       toast.error(error?.response?.data?.message || "Login failed", {
         position: "top-right",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle Signup Function
   const handleSignup = async (values: {
     name: string;
     email: string;
     password: string;
   }) => {
+    setLoading(true);
+
     try {
-      const data = await singUpUser(values.name, values.email, values.password);
-      console.log("🎉 Signed up user:", data);
-      toast.success("✅ Signup Successful! Please log in.", {
+      await singUpUser(values.name, values.email, values.password);
+
+      toast.success("Signup Successful! Please log in.", {
         position: "top-right",
       });
       setType("login"); // Switch to login after signup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error("❌ Signup failed!", error);
+      console.error("Signup failed!", error);
       toast.error(error?.response?.data?.message || "Signup failed", {
         position: "top-right",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (forgotPasswordEmail.match(/^\S+@\S+\.\S+$/) === null) {
+      return toast.error("Enter valid email!", {
+        position: "top-right",
+      });
+    }
+    setLoading(true);
+
+    try {
+      await sendOtpCode(forgotPasswordEmail);
+
+      toast.success("Code sent.", {
+        position: "top-right",
+      });
+      setType("otp"); // Switch to login after signup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "failed", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleVerifyCode = async () => {
+    setLoading(true);
+
+    try {
+      await verifyOtpCode(code, forgotPasswordEmail);
+
+      toast.success("Code Verified.", {
+        position: "top-right",
+      });
+      setType("resetPassword"); // Switch to login after signup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "failed", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setLoading(true);
+
+    try {
+      await resetPassword(newPassword, forgotPasswordEmail);
+
+      toast.success("Password updated.", {
+        position: "top-right",
+      });
+      setType("login"); // Switch to login after signup
+      setNewPassword("");
+      setCode("");
+      setForgotPasswordEmail("");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "failed", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,8 +202,17 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
             key={form.key("password")}
             {...form.getInputProps("password")}
           />
-          <Group justify="flex-end" mt="md">
-            <Button type="submit">Log in</Button>
+          <Group justify="space-between" mt="md">
+            <Button
+              variant="light"
+              size="compact-sm"
+              onClick={() => setType("forgotPassword")}
+            >
+              Forgot Password?
+            </Button>
+            <Button type="submit" loading={loading}>
+              Log in
+            </Button>
           </Group>
         </form>
       ) : type === "signup" ? (
@@ -151,35 +240,94 @@ export default function AuthenticationDialog({ close }: { close: () => void }) {
             {...form.getInputProps("password")}
           />
           <Group justify="flex-end" mt="md">
-            <Button type="submit">Sign up</Button>
+            <Button loading={loading} type="submit">
+              Sign up
+            </Button>
           </Group>
         </form>
+      ) : type === "forgotPassword" ? (
+        <div>
+          <TextInput
+            withAsterisk
+            label="Email"
+            placeholder="your@email.com"
+            value={forgotPasswordEmail}
+            onChange={(e) => setForgotPasswordEmail(e.currentTarget.value)}
+          />
+
+          <Group justify="flex-end" mt="md">
+            <Button
+              loading={loading}
+              onClick={handleForgotPassword}
+              type="submit"
+            >
+              Send Code
+            </Button>
+          </Group>
+        </div>
+      ) : type === "otp" ? (
+        <div>
+          <Group justify="flex-start" mb="md">
+            <span className="text-lg font-bold">Enter Code</span>
+          </Group>
+          <Flex justify="center">
+            <PinInput
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e)}
+              size="xl"
+              length={6}
+            />
+          </Flex>
+
+          <Group justify="flex-end" mt="md">
+            <Button
+              disabled={code.length !== 6}
+              loading={loading}
+              onClick={handleVerifyCode}
+              type="submit"
+            >
+              Verify Code
+            </Button>
+          </Group>
+        </div>
+      ) : type === "resetPassword" ? (
+        <div>
+          <Flex direction={"column"}>
+            <TextInput
+              autoFocus
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.currentTarget.value)}
+              label="New Password"
+            />
+          </Flex>
+
+          <Group justify="flex-end" mt="md">
+            <Button
+              disabled={newPassword.length < 6}
+              loading={loading}
+              onClick={handleResetPassword}
+              type="submit"
+            >
+              Change Password
+            </Button>
+          </Group>
+        </div>
       ) : (
-        <Group justify="center">
+        <Flex gap="md" align="center" direction="column">
           <h3 className="text-gray-700 font-bold font-Barlow text-base">
             Please log in / sign up to continue!
           </h3>
-          <Button variant="default" onClick={() => setType("login")}>
-            Log in
-          </Button>
-          <Button variant="default" onClick={() => setType("signup")}>
-            Sign up
-          </Button>
-        </Group>
+          <Flex mih={50} gap="md" align="center" direction="row" wrap="wrap">
+            <Button variant="default" onClick={() => setType("login")}>
+              Log in
+            </Button>
+            <Button variant="default" onClick={() => setType("signup")}>
+              Sign up
+            </Button>
+          </Flex>
+        </Flex>
       )}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
     </>
   );
 }
