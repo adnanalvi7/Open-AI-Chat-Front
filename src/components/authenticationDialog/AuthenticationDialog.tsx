@@ -299,6 +299,7 @@ export default function AuthenticationDialog({
               value={newPassword}
               onChange={(e) => setNewPassword(e.currentTarget.value)}
               label="New Password"
+              type="password"
             />
           </Flex>
 

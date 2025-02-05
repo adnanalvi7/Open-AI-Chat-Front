@@ -2,7 +2,7 @@ import { Container, Modal } from "@mantine/core";
 import Header from "./Header";
 import ChatInput from "./ChatInput";
 import { useEffect, useState } from "react";
-import { useChatSocket } from "../socket/socket";
+import useChatSocket from "../socket/socket";
 import { ThreeDots } from "react-loader-spinner";
 import { useDisclosure } from "@mantine/hooks";
 import AuthenticationDialog from "./authenticationDialog/AuthenticationDialog";

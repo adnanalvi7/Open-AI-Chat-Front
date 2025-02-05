@@ -5,7 +5,7 @@ import { useAuth } from "../context/Auth";
 const SOCKET_URL = "http://localhost:3002";
 const IP_ADDRESS_URL = "https://api64.ipify.org?format=json";
 
-export function useChatSocket() {
+const useChatSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [receivedMessages, setReceivedMessages] = useState<any[]>([]);
@@ -70,4 +70,6 @@ export function useChatSocket() {
     sendJsonMessage,
     isConnected,
   };
-}
+};
+
+export default useChatSocket;
