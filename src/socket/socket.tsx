@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../context/Auth";
-import { IP_ADDRESS_URL } from "../constants";
 
 const SOCKET_URL = "http://localhost:3002";
+const IP_ADDRESS_URL = "https://api64.ipify.org?format=json";
 
 export function useChatSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
