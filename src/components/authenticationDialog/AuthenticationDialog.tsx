@@ -7,7 +7,7 @@ import {
   sendOtpCode,
   singUpUser,
   verifyOtpCode,
-} from "../../api/Api";
+} from "../../services/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/Auth";
 

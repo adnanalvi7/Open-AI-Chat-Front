@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3000"; // Update this if needed
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 
 export const fetchMessages = async () => {
   const response = await axios.get(`${API_BASE_URL}`);
-  console.log("📩 API Response (fetchMessages):", response);
+  console.log("API Response (fetchMessages):", response);
   return response.data;
 };
 
@@ -23,13 +23,14 @@ export const loginUser = async (email: string, password: string) => {
       email,
       password,
     });
-    console.log("✅ Login Successful:", response.data);
+    console.log("Login Successful:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Login Error:", error);
+    console.error("Login Error:", error);
     throw error;
   }
 };
+
 // **Signup API**
 export const singUpUser = async (
   name: string,
@@ -42,13 +43,15 @@ export const singUpUser = async (
       email,
       password,
     });
-    console.log("✅ Login Successful:", response.data);
+    console.log("Login Successful:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Login Error:", error);
+    console.error("Login Error:", error);
     throw error;
   }
 };
+
+// **Send Otp code for reset password**
 export const sendOtpCode = async (email: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
@@ -57,10 +60,12 @@ export const sendOtpCode = async (email: string) => {
     console.log("code sent", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ failed to send code:", error);
+    console.error("failed to send code:", error);
     throw error;
   }
 };
+
+// **Verify Otp code for reset password**
 export const verifyOtpCode = async (otp: string, email: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
@@ -70,10 +75,12 @@ export const verifyOtpCode = async (otp: string, email: string) => {
     console.log("code verified", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ failed to verify code:", error);
+    console.error("failed to verify code:", error);
     throw error;
   }
 };
+
+// **Reset password**
 export const resetPassword = async (newPassword: string, email: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
@@ -83,7 +90,7 @@ export const resetPassword = async (newPassword: string, email: string) => {
     console.log("password changed", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ failed to verify code:", error);
+    console.error("failed to verify code:", error);
     throw error;
   }
 };

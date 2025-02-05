@@ -3,7 +3,7 @@ import ArrowUp from "../assets/ArrowUp";
 import { useState } from "react";
 
 interface ChatInputProps {
-  onSendMessage: (message: string) => void; // Accepts function to send message
+  onSendMessage: (message: string) => void;
 }
 
 export default function ChatInput({ onSendMessage }: ChatInputProps) {
@@ -11,8 +11,8 @@ export default function ChatInput({ onSendMessage }: ChatInputProps) {
 
   const handleSend = () => {
     if (message.trim()) {
-      onSendMessage(message.trim()); // Send message via WebSocket
-      setMessage(""); // Clear input after sending
+      onSendMessage(message.trim());
+      setMessage("");
     }
   };
   return (

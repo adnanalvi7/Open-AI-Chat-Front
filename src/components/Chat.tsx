@@ -13,9 +13,9 @@ interface Chat {
 }
 
 export default function Chat() {
-  const [currentMessage, setCurrentMessage] = useState(""); // Store the typed message
-  // const [responseMessage, setResponseMessage] = useState(null); // Store the WebSocket response
-  const [loading, setLoading] = useState(false); // Loader state
+  const [currentMessage, setCurrentMessage] = useState("");
+  // const [responseMessage, setResponseMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [opened, { toggle, close }] = useDisclosure(false);
   const [authType, setAuthType] = useState<"login" | "signup" | "">("");
   const [chats, setChats] = useState<Chat[]>([]);
@@ -41,7 +41,7 @@ export default function Chat() {
         );
         goToBottom();
       }
-      setLoading(false); // Stop loader when message arrives
+      setLoading(false);
     }
   }, [receivedMessages]);
 
@@ -54,7 +54,7 @@ export default function Chat() {
 
   const sendMessage = (text: string) => {
     if (!isConnected) {
-      console.warn("⚠️ Socket.IO not connected. Message not sent.");
+      console.warn("Socket.IO not connected. Message not sent.");
       return;
     }
     setCurrentMessage(text);

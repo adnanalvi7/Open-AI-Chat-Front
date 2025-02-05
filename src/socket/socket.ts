@@ -1,34 +1,32 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { useAuth } from "../context/Auth";
-
-const SOCKET_URL = "http://localhost:3002"; // ✅ Use http:// instead of ws://
+import { GET_IP_ADDRESS_URL } from "../constants";
 
 export function useChatSocket() {
-  const [socket, setSocket] = useState<any>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [receivedMessages, setReceivedMessages] = useState<any[]>([]);
   const [ip, setIp] = useState("");
   const { getTokenFromCookie, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    fetch("https://api64.ipify.org?format=json")
+    fetch(GET_IP_ADDRESS_URL)
       .then((response) => response.json())
       .then((data) => setIp(data.ip))
       .catch((error) => console.error("Error fetching IP:", error));
   }, []);
 
   useEffect(() => {
-    console.log("what is ip", ip);
-
     if (!ip) return;
+    const SOCKET_URL =
+      process.env.REACT_APP_SOCKET_URL || "http://localhost:3002";
     const token = getTokenFromCookie();
-
     const newSocket = io(SOCKET_URL, {
-      transports: ["websocket"], // Force WebSocket
-      reconnection: true, // Enable auto-reconnect
-      reconnectionAttempts: 10, // Retry 10 times
-      reconnectionDelay: 5000, // Wait 5 seconds between retries
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 5000,
       auth: {
         ipAddress: ip,
         ...(token && isAuthenticated ? { token } : {}),
@@ -38,22 +36,18 @@ export function useChatSocket() {
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
-      console.log("✅ Socket.IO Connected to", SOCKET_URL);
       setIsConnected(true);
     });
 
     newSocket.on("disconnect", () => {
-      console.log("❌ Socket.IO Disconnected, retrying...");
       setIsConnected(false);
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("⚠️ Socket.IO Connection Error:", err);
+      console.error("Socket.IO Connection Error:", err);
     });
 
-    // ✅ Listen for messages from the server
     newSocket.on("message", (data) => {
-      console.log("📩 Received message:", data);
       setReceivedMessages((prev) => [...prev, data]);
     });
 
@@ -64,9 +58,9 @@ export function useChatSocket() {
 
   const sendJsonMessage = (message: string) => {
     if (socket && isConnected) {
-      socket.emit("message", message); // ✅ Send message to server
+      socket.emit("message", message);
     } else {
-      console.warn("⚠️ Cannot send message, socket not connected.");
+      console.warn("Cannot send message, socket not connected.");
     }
   };
 
