@@ -14,7 +14,6 @@ interface Chat {
 
 export default function Chat() {
   const [currentMessage, setCurrentMessage] = useState("");
-  // const [responseMessage, setResponseMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [opened, { toggle, close }] = useDisclosure(false);
   const [authType, setAuthType] = useState<"login" | "signup" | "">("");

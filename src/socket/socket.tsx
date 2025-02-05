@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../context/Auth";
-import { GET_IP_ADDRESS_URL } from "../constants";
+import { IP_ADDRESS_URL } from "../constants";
+
+const SOCKET_URL = "http://localhost:3002";
 
 export function useChatSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -11,7 +13,7 @@ export function useChatSocket() {
   const { getTokenFromCookie, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    fetch(GET_IP_ADDRESS_URL)
+    fetch(IP_ADDRESS_URL)
       .then((response) => response.json())
       .then((data) => setIp(data.ip))
       .catch((error) => console.error("Error fetching IP:", error));
@@ -19,8 +21,6 @@ export function useChatSocket() {
 
   useEffect(() => {
     if (!ip) return;
-    const SOCKET_URL =
-      process.env.REACT_APP_SOCKET_URL || "http://localhost:3002";
     const token = getTokenFromCookie();
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket"],
@@ -54,6 +54,7 @@ export function useChatSocket() {
     return () => {
       newSocket.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ip, isAuthenticated]);
 
   const sendJsonMessage = (message: string) => {
@@ -65,8 +66,8 @@ export function useChatSocket() {
   };
 
   return {
-    sendJsonMessage,
     receivedMessages,
+    sendJsonMessage,
     isConnected,
   };
 }
