@@ -2,7 +2,7 @@ import { ActionIcon, Menu } from "@mantine/core";
 import UserIcon from "../assets/UserIcon";
 import NewChat from "../assets/NewChat";
 import { useAuth } from "../context/Auth";
-import { IconTrash } from "@tabler/icons-react";
+// import { IconTrash } from "@tabler/icons-react";
 
 type Props = {
   toggle: () => void;
@@ -55,7 +55,7 @@ function Header({ toggle, setAuthType }: Props) {
                   itemLabel: "!text-base !text-[#5d5d5d]",
                 }}
                 color="red"
-                leftSection={<IconTrash size={14} />}
+                // leftSection={<IconTrash size={14} />}
                 onClick={logout}
               >
                 Log out

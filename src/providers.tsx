@@ -3,7 +3,7 @@ import { Notifications } from "@mantine/notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { Bounce, ToastContainer } from "react-toastify";
-import { AuthProvider } from "./src/context/Auth";
+import { AuthProvider } from "./context/Auth";
 
 const queryClient = new QueryClient();
 

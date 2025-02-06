@@ -1,4 +1,4 @@
-import { AppProviders } from "../providers";
+import { AppProviders } from "./providers";
 import Chat from "./components/Chat";
 import "./index.css";
 import "./App.css";
